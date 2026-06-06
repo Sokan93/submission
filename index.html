@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exam Submission Portal</title>
+  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --border: #1f2433;
+      --accent: #f0c040;
+      --accent2: #e05a2b;
+      --text: #eef0f6;
+      --muted: #636b82;
+      --success: #3ecf8e;
+      --error: #f04060;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.4;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* glow blob */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -120px;
+      right: -120px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(240,192,64,0.08) 0%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    /* header */
+    .header {
+      margin-bottom: 2.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(240,192,64,0.1);
+      border: 1px solid rgba(240,192,64,0.3);
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 2px;
+      margin-bottom: 1.2rem;
+    }
+
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+      line-height: 1.6;
+    }
+
+    /* card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    /* form */
+    .field {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--muted);
+    }
+
+    /* uploadcare widget overrides */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem 1rem;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+      background: var(--bg);
+      position: relative;
+    }
+
+    .upload-area:hover {
+      border-color: var(--accent);
+      background: rgba(240,192,64,0.03);
+    }
+
+    .upload-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .upload-label strong {
+      color: var(--accent);
+    }
+
+    /* hide default uploadcare widget, use custom trigger */
+    [role="progressbar"] { display: none !important; }
+
+    .uploader-wrapper {
+      position: relative;
+    }
+
+    /* file list */
+    .file-list {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
+    .file-item .file-icon { color: var(--accent); }
+    .file-item .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-item .file-remove {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 4px;
+      transition: color 0.2s;
+    }
+    .file-item .file-remove:hover { color: var(--error); }
+
+    /* submit button */
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--accent);
+      color: #0d0f14;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: 1.5rem;
+    }
+
+    .btn:hover:not(:disabled) { opacity: 0.88; }
+    .btn:active:not(:disabled) { transform: scale(0.99); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* progress */
+    .progress-wrap {
+      margin-top: 1rem;
+      display: none;
+    }
+
+    .progress-bar-bg {
+      background: var(--border);
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: right;
+    }
+
+    /* status messages */
+    .status {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    .status.success {
+      background: rgba(62,207,142,0.1);
+      border: 1px solid rgba(62,207,142,0.3);
+      color: var(--success);
+      display: block;
+    }
+
+    .status.error {
+      background: rgba(240,64,96,0.1);
+      border: 1px solid rgba(240,64,96,0.3);
+      color: var(--error);
+      display: block;
+    }
+
+    /* success screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .success-screen.show { display: block; }
+    .form-inner.hide { display: none; }
+
+    .success-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .success-screen h2 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .success-screen p {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .success-name {
+      color: var(--accent);
+    }
+
+    /* footer */
+    .footer {
+      margin-top: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* drag over */
+    .upload-area.dragover {
+      border-color: var(--accent);
+      background: rgba(240,192,64,0.06);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="badge">Exam Portal</div>
+    <h1>Submit Your <span>Work</span></h1>
+    <p class="subtitle">Upload your exam files below. Make sure all required documents are included before submitting.</p>
+  </div>
+
+  <div class="card">
+    <!-- Success Screen -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">✅</div>
+      <h2>Submitted!</h2>
+      <p>Your files have been received, <span class="success-name" id="successName"></span>.<br>You may now close this tab.</p>
+    </div>
+
+    <!-- Form -->
+    <div class="form-inner" id="formInner">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="studentName" placeholder="e.g. Ayodeji Adeyemi" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label>Exam Files</label>
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">🗂️</div>
+          <div class="upload-label">
+            <strong>Click to select your exam folder</strong><br>
+            <small style="font-size:0.78rem;">All files inside the folder will be uploaded</small>
+          </div>
+          <input type="file" id="fileInput" webkitdirectory mozdirectory multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;" />
+        </div>
+        <div class="file-list" id="fileList"></div>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">Uploading...</div>
+      </div>
+
+      <div class="status" id="statusMsg"></div>
+
+      <button class="btn" id="submitBtn" disabled>Submit Files</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    — Close this tab only after you see the confirmation screen —
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // CONFIG — Replace with your Uploadcare key
+  // ==========================================
+  const UPLOADCARE_PUBLIC_KEY = '31274b5aab1a8e6e5adc';
+  // ==========================================
+
+  const nameInput = document.getElementById('studentName');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const submitBtn = document.getElementById('submitBtn');
+  const uploadArea = document.getElementById('uploadArea');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+  const statusMsg = document.getElementById('statusMsg');
+  const successScreen = document.getElementById('successScreen');
+  const formInner = document.getElementById('formInner');
+  const successName = document.getElementById('successName');
+
+  let selectedFiles = [];
+
+  // Drag & drop disabled for folder mode (browser restriction)
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); });
+  uploadArea.addEventListener('drop', e => { e.preventDefault(); });
+
+  fileInput.addEventListener('change', () => {
+    addFiles([...fileInput.files]);
+    fileInput.value = '';
+  });
+
+  function addFiles(newFiles) {
+    newFiles.forEach(f => {
+      if (!selectedFiles.find(x => x.name === f.name && x.size === f.size)) {
+        selectedFiles.push(f);
+      }
+    });
+    renderFileList();
+    checkReady();
+  }
+
+  function renderFileList() {
+    fileList.innerHTML = '';
+    selectedFiles.forEach((f, i) => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.innerHTML = `
+        <span class="file-icon">📄</span>
+        <span class="file-name">${f.name}</span>
+        <span style="color:var(--muted);font-size:0.72rem;">${(f.size/1024).toFixed(0)}KB</span>
+        <button class="file-remove" data-index="${i}" title="Remove">✕</button>
+      `;
+      fileList.appendChild(item);
+    });
+
+    fileList.querySelectorAll('.file-remove').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedFiles.splice(parseInt(btn.dataset.index), 1);
+        renderFileList();
+        checkReady();
+      });
+    });
+  }
+
+  nameInput.addEventListener('input', checkReady);
+
+  function checkReady() {
+    submitBtn.disabled = !(nameInput.value.trim() && selectedFiles.length > 0);
+  }
+
+  function showStatus(msg, type) {
+    statusMsg.textContent = msg;
+    statusMsg.className = `status ${type}`;
+  }
+
+  async function uploadFile(file, studentFolder, index, total) {
+    const formData = new FormData();
+    formData.append('UPLOADCARE_PUB_KEY', UPLOADCARE_PUBLIC_KEY);
+    formData.append('UPLOADCARE_STORE', '1');
+    formData.append('file', file, file.name);
+    // Store metadata (folder-like grouping via filename prefix)
+    formData.append('metadata[student]', studentFolder);
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://upload.uploadcare.com/base/');
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const fileProgress = e.loaded / e.total;
+          const overall = ((index + fileProgress) / total) * 100;
+          progressFill.style.width = overall.toFixed(1) + '%';
+          progressText.textContent = `Uploading file ${index + 1} of ${total} — ${overall.toFixed(0)}%`;
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          reject(new Error(`Upload failed: ${xhr.statusText}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.send(formData);
+    });
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const name = nameInput.value.trim();
+    if (!name || selectedFiles.length === 0) return;
+
+    // Sanitize name for use in filename prefix
+    const studentFolder = name.replace(/[^a-zA-Z0-9 _-]/g, '').replace(/\s+/g, '_');
+    const timestamp = new Date().toISOString().slice(0,10);
+    const prefix = `${timestamp}__${studentFolder}__`;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading...';
+    progressWrap.style.display = 'block';
+    progressFill.style.width = '0%';
+    statusMsg.className = 'status';
+
+    try {
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        // Rename file to include student name prefix
+        const renamedFile = new File([file], prefix + file.name, { type: file.type });
+        await uploadFile(renamedFile, name, i, selectedFiles.length);
+      }
+
+      progressFill.style.width = '100%';
+      progressText.textContent = 'Upload complete!';
+
+      setTimeout(() => {
+        formInner.classList.add('hide');
+        successName.textContent = name;
+        successScreen.classList.add('show');
+      }, 600);
+
+    } catch (err) {
+      showStatus('❌ Upload failed. Please check your connection and try again.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Files';
+      progressWrap.style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>
